@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -12,10 +11,6 @@ import (
 )
 
 func main() {
-	if err := os.Setenv("TZ", ""); err != nil {
-		return
-	}
-
 	latencies := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:    "event_delivery_latency_seconds",
 		Help:    "The latency of each event delivery",
