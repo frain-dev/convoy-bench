@@ -1,5 +1,5 @@
 # convoy-bench
-convoy-bench contains all artifacts used to benchmark [convoy](https://github.com/frain-dev/convoy)
+convoy-bench contains all code and scripts used to benchmark [convoy](https://github.com/frain-dev/convoy)
 
 ## Tools
 1. k6.io 
