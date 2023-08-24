@@ -12,9 +12,9 @@ import (
 
 func main() {
 	latencies := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name:    "event_delivery_latency_seconds",
-		Help:    "The latency of each event delivery",
-		Buckets: prometheus.LinearBuckets(1.0, 1.5, 10),
+		Name:    "event_delivery_seconds",
+		Help:    "The latency in seconds for each event delivery",
+		Buckets: prometheus.LinearBuckets(3.0, 3.0, 10),
 	})
 
 	reg := prometheus.NewRegistry()
