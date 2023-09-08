@@ -5,6 +5,7 @@ import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 const client = sqs.newClient();
 const queueUrl = __ENV.QUEUE_URL;
 
+export let options = globals.options
 export default function () {
 	const params = {
   	QueueUrl: queueUrl,
