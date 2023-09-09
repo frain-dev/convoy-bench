@@ -33,8 +33,8 @@ export const generateSmallPayload = (endpointId) => ({
 
 // Export k6 options
 export const options = {
-	vus: 20,
-	duration: '15s',
+	vus: __ENV.VUS,
+	duration: __ENV.DURATION,
 	noConnectionReuse: true,
 	thresholds: {
 		http_req_duration: ["p(99)<6000"], // 99% of requests must complete below 6s.
