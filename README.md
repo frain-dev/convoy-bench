@@ -1,6 +1,9 @@
 # convoy-bench
 convoy-bench contains all the code and scripts to benchmark any [convoy](https://github.com/frain-dev/convoy) cluster. The goal is to be able to quickly benchmark any Convoy cluster to know it's capacity. This was heavily inspired by [Clickbench](https://github.com/ClickHouse/ClickBench/) and [Lavinmqperf](https://lavinmq.com/documentation/lavinmqperf)
 
+## Why?
+Webhook Gateways, similar to API Gateways, have become a critical component of modern web services. Teams are processing millions and billions of webhooks monthly. We created this benchmarking suite to easily enable our users to perform capacity planning to determine what cluster size they need for their workloads.
+
 ## Tools
 1. k6.io 
 2. Grafana
@@ -50,3 +53,6 @@ The example below will run for 5 concurrent users for 5 minutes blasting events 
 --aws-access-key "{aws-access-key}" \
 --aws-secret-key "{aws-secret-key}"
 ```
+
+## Support
+If you need any support please don't hesitate to reach out to us at support@getconvoy.io or join our slack community [here](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
