@@ -20,18 +20,20 @@ Usage:
   convoy-bench.rb exec -e, --endpoint-id=ENDPOINT-ID
 
 Options:
-  -p,   [--producer=PRODUCER]      # Select a producer to publish events from the following - http, sqs, pubsub or kafka.
-                                   # Default: http
-  -u,   [--uri=URI]                # URI of your Convoy Cluster.
-                                   # Default: http://localhost:5005
-  -v,   [--vus=VUS]                # Set how many virtual users should execute the test concurrently.
-                                   # Default: 10
-  -d,   [--duration=DURATION]      # Set how long the test should run. Use Golang string syntax: 1m, 5s, 10m5s .
-                                   # Default: 1m
-  -e,   --endpoint-id=ENDPOINT-ID  # ID of the endpoint configured on Convoy.
-  -a,   [--api-key=API-KEY]        # Convoy Cluster API Key. Specify this if producer is http.
-  -pid, [--project-id=PROJECT-ID]  # Convoy Cluster project ID. Specify this if producer is http.
-  -q,   [--queue-url=QUEUE-URL]    # Amazon SQS URL. Specify this if producer is sqs.
+  -p,   [--producer=PRODUCER]              # Select a producer to publish events from the following - http, sqs, pubsub or kafka.
+                                           # Default: http
+  -u,   [--uri=URI]                        # URI of your Convoy Cluster.
+                                           # Default: http://localhost:5005
+  -v,   [--vus=VUS]                        # Set how many virtual users should execute the test concurrently.
+                                           # Default: 10
+  -d,   [--duration=DURATION]              # Set how long the test should run. Use Golang string syntax: 1m, 5s, 10m5s .
+                                           # Default: 1m
+  -e,   --endpoint-id=ENDPOINT-ID          # ID of the endpoint configured on Convoy.
+  -a,   [--api-key=API-KEY]                # Convoy Cluster API Key. Specify this if producer is http.
+  -pid, [--project-id=PROJECT-ID]          # Convoy Cluster project ID. Specify this if producer is http.
+  -q,   [--queue-url=QUEUE-URL]            # Amazon SQS URL. Specify this if producer is sqs.
+  -aak, [--aws-access-key=AWS-ACCESS-KEY]  # AWS Access Key. Specify this if producer is sqs.
+  -ask, [--aws-secret-key=AWS-SECRET-KEY]  # AWS Secret Key. Specify this if producer is sqs.
 
 execute convoy benchmarks
 ```
