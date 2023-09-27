@@ -16,6 +16,8 @@ class ConvoyBench < Thor
     desc: "URI of your Convoy Cluster."
   option :vus, aliases: "-v", default: "10",
     desc: "Set how many virtual users should execute the test concurrently."
+  option :rate, aliases: "-r", default: "10",
+      desc: "Set how many requests should be sent per second."
   option :duration, aliases: "-d", default: "1m",
     desc: "Set how long the test should run. Use Golang string syntax: 1m, 5s, 10m5s ."
   option "endpoint-id", aliases: "-e", required: true,
@@ -32,6 +34,7 @@ class ConvoyBench < Thor
     desc: "AWS Secret Key. Specify this if producer is sqs."
   def exec
     ENV["VUS"] = options[:vus]
+    ENV["RATE"] = options[:rate]
     ENV["DURATION"] = options[:duration]
     ENV["BASE_URL"] = options[:uri]
     ENV["ENDPOINT_ID"] = options["endpoint-id"]

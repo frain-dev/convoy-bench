@@ -1,0 +1,28 @@
+version: "3"
+
+services:
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    ports:
+      - '3000:3000'
+    networks:
+      grafana-network:
+        ipv4_address: 172.16.0.16
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - '9090:9090'
+    volumes:
+      - './configs/prometheus.yml:/etc/prometheus/prometheus.yml'
+      - './prometheus-data:/prometheus'
+    networks:
+      grafana-network:
+        ipv4_address: 172.16.0.15
+
+networks:
+  grafana-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.0.0/24

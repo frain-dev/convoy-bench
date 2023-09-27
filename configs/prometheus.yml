@@ -4,4 +4,4 @@ global:
 scrape_configs:
   - job_name: consumer
     static_configs:
-      - targets: ["localhost:8080"]
+      - targets: ["benchmarks-consumer.getconvoy.io"]

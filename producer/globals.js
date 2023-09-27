@@ -33,10 +33,19 @@ export const generateSmallPayload = (endpointId) => ({
 
 // Export k6 options
 export const options = {
-	vus: __ENV.VUS,
-	duration: __ENV.DURATION,
 	noConnectionReuse: true,
+	insecureSkipTLSVerify: true,
 	thresholds: {
 		http_req_duration: ["p(99)<6000"], // 99% of requests must complete below 6s.
+	},
+	scenarios: {
+		constant_request_rate: {
+			executor: 'constant-arrival-rate',
+			rate: __ENV.RATE,
+			timeUnit: '1s',
+			duration: __ENV.DURATION,
+			preAllocatedVUs: 10, // how large the initial pool of VUs would be
+			maxVUs: __ENV.VUS, // if the preAllocatedVUs are not enough, we can initialize more
+		},
 	},
 };
