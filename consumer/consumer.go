@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -11,6 +13,21 @@ import (
 )
 
 func main() {
+	var reqs, rqs = 0, make([]int, 0)
+
+	ticker := time.NewTicker(time.Second)
+	go func() {
+		for _ = range ticker.C {
+			// clears the array after an hour
+			if len(rqs) == 3600 {
+				rqs = []int{}
+			}
+
+			rqs = append(rqs, reqs)
+			reqs = 0
+		}
+	}()
+
 	latencies := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:    "event_delivery_seconds",
 		Help:    "The latency in seconds for each event delivery",
@@ -41,6 +58,18 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+	mux.HandleFunc("/rps", func(w http.ResponseWriter, req *http.Request) {
+		b := strings.Builder{}
+		for i := range rqs {
+			if rqs[i] == 0 {
+				continue
+			}
+
+			b.WriteString(fmt.Sprintf("%v\n", rqs[i]))
+		}
+
+		w.Write([]byte(b.String()))
+	})
 	mux.HandleFunc("/none", func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
@@ -69,6 +98,8 @@ func main() {
 			httpRequestsTotal.WithLabelValues(req.Method).Inc()
 			httpRequestDuration.WithLabelValues(req.Method).Observe(elapsed)
 
+			reqs++
+
 			w.Write([]byte("Great."))
 		}
 	})
@@ -78,5 +109,6 @@ func main() {
 		Addr:    ":8080",
 	}
 
+	log.Println("running on port 8080")
 	log.Fatal(srv.ListenAndServe())
 }
