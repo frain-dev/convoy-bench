@@ -18,11 +18,6 @@ func main() {
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		for _ = range ticker.C {
-			// clears the array after an hour
-			if len(rqs) == 3600 {
-				rqs = []int{}
-			}
-
 			rqs = append(rqs, reqs)
 			reqs = 0
 		}
@@ -42,14 +37,11 @@ func main() {
 		[]string{"method"},
 	)
 
-	httpRequestDuration := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "http_request_duration_seconds",
-			Help:    "HTTP request duration distribution",
-			Buckets: prometheus.DefBuckets,
-		},
-		[]string{"method"},
-	)
+	httpRequestDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name:    "http_request_duration_seconds",
+		Help:    "HTTP request duration distribution",
+		Buckets: prometheus.DefBuckets,
+	})
 
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(latencies)
@@ -95,8 +87,8 @@ func main() {
 			elapsed := time.Since(start).Seconds()
 
 			// Increment request count and record request duration.
+			httpRequestDuration.Observe(elapsed)
 			httpRequestsTotal.WithLabelValues(req.Method).Inc()
-			httpRequestDuration.WithLabelValues(req.Method).Observe(elapsed)
 
 			reqs++
 
