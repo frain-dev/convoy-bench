@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -13,12 +12,17 @@ import (
 )
 
 func main() {
-	var reqs, rqs = 0, make([]int, 0)
+	var reqs, rps = 0, make([]int, 0)
+	type Response struct {
+		Data []int `json:"data"`
+	}
 
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		for _ = range ticker.C {
-			rqs = append(rqs, reqs)
+			if reqs != 0 {
+				rps = append(rps, reqs)
+			}
 			reqs = 0
 		}
 	}()
@@ -50,18 +54,28 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+
 	mux.HandleFunc("/rps", func(w http.ResponseWriter, req *http.Request) {
-		b := strings.Builder{}
-		for i := range rqs {
-			if rqs[i] == 0 {
-				continue
-			}
-
-			b.WriteString(fmt.Sprintf("%v\n", rqs[i]))
+		res := Response{
+			Data: rps,
 		}
+		b, _ := json.Marshal(res)
 
-		w.Write([]byte(b.String()))
+		_, _ = w.Write(b)
 	})
+
+	mux.HandleFunc("/clear", func(w http.ResponseWriter, req *http.Request) {
+		rps = []int{}
+		reqs = 0
+
+		res := Response{
+			Data: rps,
+		}
+		b, _ := json.Marshal(res)
+
+		_, _ = w.Write(b)
+	})
+
 	mux.HandleFunc("/none", func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
