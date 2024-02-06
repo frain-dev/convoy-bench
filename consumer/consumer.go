@@ -107,7 +107,10 @@ func main() {
 			reqs++
 
 			w.Write([]byte("Great."))
+			return
 		}
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Required header X-Benchmark-Timestamp missing"))
 	})
 
 	srv := http.Server{
