@@ -39,13 +39,19 @@ execute convoy benchmarks
 ```
 
 ### Examples
-The example below will run for 5 concurrent users for 5 minutes blasting events through Convoy's REST API.
+
+#### HTTP/Incoming 
+The example below will run for 10 concurrent users for 1 minute blasting events through Convoy's REST API.
 ```bash
-./convoy-bench.rb exec -p http -v 5 -d 5m \
---endpoint-id "{endpoint-id}" \
---project-id "{project-id}"
---api-key "{api-key}" \
+./convoy-bench.rb exec -p http -u "{your-incoming-project-ingest-url}" -t incoming -v 10 -d 1m
 ```
+
+#### HTTP/Outgoing Project 
+The example below will run for 80 concurrent users for 1 minute blasting events through Convoy's REST API.
+```bash
+./convoy-bench.rb exec -p http -u "{your-convoy-instance-url}" -t outgoing -v 80 -d 1m --endpoint-id "{your-endpoint-id}" --project-id "{your-project-id}" --api-key "{your-api-key}"
+```
+
 
 The example below will run for 5 concurrent users for 5 minutes blasting events through an Amazon SQS Queue.
 ```bash
