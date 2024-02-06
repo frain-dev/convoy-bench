@@ -1,0 +1,11 @@
+version: "3.9"
+
+x-component-defaults: &component_defaults
+  image: frain/bench-convoy-consumer:v9
+  restart: unless-stopped
+
+services:
+  consumer:
+    <<: *component_defaults
+    ports:
+      - "8080:8080"
