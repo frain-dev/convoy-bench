@@ -2,13 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gonum.org/v1/gonum/stat"
 )
 
 func main() {
@@ -76,6 +80,23 @@ func main() {
 		_, _ = w.Write(b)
 	})
 
+	mux.HandleFunc("/px", func(w http.ResponseWriter, req *http.Request) {
+		data := make([]float64, len(rps))
+		for i, v := range rps {
+			data[i] = float64(v)
+		}
+		sort.Float64s(data)
+		mean := stat.Mean(data, nil)
+		p95 := percentile(data, 95)
+		p99 := percentile(data, 99)
+		p1 := percentile(data, 1)
+		p5 := percentile(data, 5)
+
+		display := fmt.Sprintf("\nMean: %.2f\np(1): %.2f\np(5): %.2f\np(95): %.2f\n,p(99): %.2f\n", mean, p1, p5, p95, p99)
+		w.Write([]byte(display))
+
+	})
+
 	mux.HandleFunc("/none", func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
@@ -120,4 +141,20 @@ func main() {
 
 	log.Println("running on port 8080")
 	log.Fatal(srv.ListenAndServe())
+}
+
+// percentile calculates the value at a given percentile using the nearest rank method.
+func percentile(data []float64, perc float64) float64 {
+	if len(data) == 0 {
+		return math.NaN()
+	}
+	k := float64(len(data)-1) * (perc / 100.0)
+	f := math.Floor(k)
+	c := math.Ceil(k)
+	if f == c {
+		return data[int(k)]
+	}
+	d0 := data[int(f)] * (c - k)
+	d1 := data[int(c)] * (k - f)
+	return d0 + d1
 }
