@@ -1,21 +1,16 @@
 import * as globals from './globals.js';
 import http from "k6/http";
 import { check } from "k6";
-import {generate1kbPayload} from "./globals.js";
-
-const apiKey = __ENV.API_KEY;
-const projectId = __ENV.PROJECT_ID;
 
 export let options = globals.options
 export default function () {
 	let eventBody = JSON.stringify(globals.generate1kbPayload(globals.endpointId));
-	const createEventUrl = `${globals.baseUrl}/projects/${projectId}/events`;
 
-	let res = http.post(createEventUrl, eventBody, {
+	let res = http.post(globals.ingestUrl, eventBody, {
 		timeout: "30s",
 		headers: {
 			"Content-Type": "application/json",
-			"Authorization": `Bearer ${apiKey}`,
+			'X-Benchmark-Timestamp': Math.floor(Date.now() / 1000).toString()
 		},
 	});
 
