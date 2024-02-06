@@ -12,20 +12,22 @@ class ConvoyBench < Thor
   desc "exec", "execute convoy benchmarks"
   option :producer, aliases: "-p", default: "http", 
     desc: "Select a producer to publish events from the following - http, sqs, pubsub or kafka."
+  option :project, aliases: "-t", default: "outgoing",
+      desc: "Specify the project type, outgoing or incoming"
   option :uri, aliases: "-u", default: "http://localhost:5005",
-    desc: "URI of your Convoy Cluster."
+    desc: "For outgoing projects it is base url of your Convoy Cluster. For incoming projects it is the ingest url."
   option :vus, aliases: "-v", default: "10",
     desc: "Set how many virtual users should execute the test concurrently."
   option :rate, aliases: "-r", default: "10",
       desc: "Set how many requests should be sent per second."
   option :duration, aliases: "-d", default: "1m",
-    desc: "Set how long the test should run. Use Golang string syntax: 1m, 5s, 10m5s ."
-  option "endpoint-id", aliases: "-e", required: true,
-    desc: "ID of the endpoint configured on Convoy."
+    desc: "Set how long the test should run. Use Golang string syntax: 1m, 5s, 10m5s."
+  option "endpoint-id", aliases: "-e", required: false,
+    desc: "ID of the endpoint configured on Convoy. Only specify this if the project is outgoing."
   option "api-key", aliases: "-a", required: false,
-    desc: "Convoy Cluster API Key. Specify this if producer is http."
+    desc: "Convoy Cluster API Key. Specify this if producer is http and the project is outgoing."
   option "project-id", aliases: "-pid", required: false,
-    desc: "Convoy Cluster project ID. Specify this if producer is http."
+    desc: "Convoy Cluster project ID. Specify this if producer is http and the project is outgoing."
   option "queue-url", aliases: "-q", required: false,
     desc: "Amazon SQS URL. Specify this if producer is sqs."
   option "aws-access-key", aliases: "-aak", required: false,
@@ -56,7 +58,11 @@ class ConvoyBench < Thor
   def get_producer_command(producer)
     case producer
     when "http", :http
-      producer_command = "producer/http_test.js"
+      if options[:project] == "outgoing"
+        producer_command = "producer/http_test_outgoing.js"
+      elsif options[:project] == "incoming"
+        producer_command = "producer/http_test_incoming.js"
+      end
     when "sqs", :sqs
       producer_command = "producer/sqs_test.js"
     when "pubsub", :pubsub 
