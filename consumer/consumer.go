@@ -92,7 +92,7 @@ func main() {
 		p1 := percentile(data, 1)
 		p5 := percentile(data, 5)
 
-		display := fmt.Sprintf("\nMean: %.2f\np(1): %.2f\np(5): %.2f\np(95): %.2f\n,p(99): %.2f\n", mean, p1, p5, p95, p99)
+		display := fmt.Sprintf("\nCount: %d\nMean: %.2f\np(1): %.2f\np(5): %.2f\np(95): %.2f\np(99): %.2f\n", len(rps), mean, p1, p5, p95, p99)
 		w.Write([]byte(display))
 
 	})
