@@ -18,7 +18,6 @@ const emails = [
 export const baseUrl = `${__ENV.BASE_URL}/api/v1`;
 export const ingestUrl = `${__ENV.BASE_URL}`;
 export const endpointId = __ENV.ENDPOINT_ID;
-
 // Export methods
 export const generateSmallPayload = (endpointId) => ({
 	endpoint_id: endpointId,
@@ -63,7 +62,7 @@ export const options = {
 			rate: __ENV.RATE,
 			timeUnit: '1s',
 			duration: __ENV.DURATION,
-			preAllocatedVUs: 10, // how large the initial pool of VUs would be
+			preAllocatedVUs: 100, // how large the initial pool of VUs would be
 			maxVUs: __ENV.VUS, // if the preAllocatedVUs are not enough, we can initialize more
 		},
 	},

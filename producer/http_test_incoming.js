@@ -3,6 +3,8 @@ import http from "k6/http";
 import { check } from "k6";
 
 export let options = globals.options
+
+
 export default function () {
 	let eventBody = JSON.stringify(globals.generate1kbPayload(globals.endpointId));
 
