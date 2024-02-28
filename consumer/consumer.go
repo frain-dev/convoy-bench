@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -16,6 +17,7 @@ import (
 )
 
 func main() {
+	mutex := sync.Mutex{}
 	var reqs, rps = 0, make([]int, 0)
 	type Response struct {
 		Data []int `json:"data"`
@@ -23,11 +25,13 @@ func main() {
 
 	ticker := time.NewTicker(time.Second)
 	go func() {
-		for _ = range ticker.C {
+		for range ticker.C {
+			mutex.Lock()
 			if reqs != 0 {
 				rps = append(rps, reqs)
 			}
 			reqs = 0
+			mutex.Unlock()
 		}
 	}()
 
@@ -92,9 +96,8 @@ func main() {
 		p1 := percentile(data, 1)
 		p5 := percentile(data, 5)
 
-		display := fmt.Sprintf("\nCount: %d\nMean: %.2f\np(1): %.2f\np(5): %.2f\np(95): %.2f\np(99): %.2f\n", len(rps), mean, p1, p5, p95, p99)
-		w.Write([]byte(display))
-
+		display := fmt.Sprintf("Count: %d\nMean: %.2f\np(1): %.2f\np(5): %.2f\np(95): %.2f\np(99): %.2f\n", len(rps), mean, p1, p5, p95, p99)
+		_, _ = w.Write([]byte(display))
 	})
 
 	mux.HandleFunc("/none", func(w http.ResponseWriter, req *http.Request) {
@@ -104,14 +107,14 @@ func main() {
 		if timeHeader, found := req.Header["X-Benchmark-Timestamp"]; found {
 			if len(timeHeader) != 1 {
 				// end.
-				w.Write([]byte("End."))
+				_, _ = w.Write([]byte("End."))
 				return
 			}
 
 			st, err := strconv.ParseInt(timeHeader[0], 10, 64)
 			if err != nil {
 				// end.
-				w.Write([]byte("End."))
+				_, _ = w.Write([]byte("End."))
 				return
 			}
 
@@ -127,11 +130,11 @@ func main() {
 
 			reqs++
 
-			w.Write([]byte("Great."))
+			_, _ = w.Write([]byte("Great."))
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Required header X-Benchmark-Timestamp missing"))
+		_, _ = w.Write([]byte("Required header X-Benchmark-Timestamp missing"))
 	})
 
 	srv := http.Server{
