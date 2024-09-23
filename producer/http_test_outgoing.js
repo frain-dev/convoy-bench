@@ -21,6 +21,7 @@ export default function () {
 	check(res, {
 		'response code was 201': (res) => res.status === 201,
 		'response code was 200': (res) => res.status === 200,
+		'response code was 429': (res) => res.status === 429,
 		'response code was 4xx': (res) => res.status >= 400 && res.status < 500,
 		'response code was 5xx': (res) => res.status >= 500,
 	});
