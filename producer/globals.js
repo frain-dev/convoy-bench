@@ -62,8 +62,8 @@ export const options = {
 			rate: __ENV.RATE,
 			timeUnit: '1s',
 			duration: __ENV.DURATION,
-			preAllocatedVUs: 10000, // how large the initial pool of VUs would be
-			maxVUs: __ENV.VUS, // if the preAllocatedVUs are not enough, we can initialize more
+			preAllocatedVUs: __ENV.VUS, // how large the initial pool of VUs would be
+			maxVUs: 10000, // if the preAllocatedVUs are not enough, we can initialize more
 		},
 	},
 };
