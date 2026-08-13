@@ -19,9 +19,11 @@ import (
 
 func main() {
 	mutex := sync.Mutex{}
-	// Atomic rather than mutex-guarded: every delivery increments this, so a lock
-	// here would have the consumer contending with itself at the rates it is
-	// measuring. rps is mutex-guarded instead, being touched once a second.
+	// Atomic so the delivery handlers never take a lock: one per delivery would
+	// have the consumer contending with itself at the rates it is measuring.
+	// Everything off that hot path (the sampler, /clear, the reporting handlers)
+	// still goes through the mutex, which is what keeps reqs and rps consistent
+	// with each other.
 	var reqs atomic.Int64
 	rps := make([]int, 0)
 	type Response struct {
@@ -31,12 +33,14 @@ func main() {
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		for range ticker.C {
-			n := reqs.Swap(0)
-			if n != 0 {
-				mutex.Lock()
+			// Swap and append under one lock. Splitting them lets /clear wipe rps
+			// in between, after which this appends a sample from the window that
+			// was just cleared and the next run starts dirty.
+			mutex.Lock()
+			if n := reqs.Swap(0); n != 0 {
 				rps = append(rps, int(n))
-				mutex.Unlock()
 			}
+			mutex.Unlock()
 		}
 	}()
 
@@ -72,8 +76,11 @@ func main() {
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 
 	mux.HandleFunc("/rps", func(w http.ResponseWriter, req *http.Request) {
+		// make+copy rather than append to a nil slice, so an empty window still
+		// marshals as [] and not null.
 		mutex.Lock()
-		snapshot := append([]int(nil), rps...)
+		snapshot := make([]int, len(rps))
+		copy(snapshot, rps)
 		mutex.Unlock()
 
 		res := Response{
@@ -87,8 +94,8 @@ func main() {
 	mux.HandleFunc("/clear", func(w http.ResponseWriter, req *http.Request) {
 		mutex.Lock()
 		rps = []int{}
-		mutex.Unlock()
 		reqs.Store(0)
+		mutex.Unlock()
 
 		res := Response{
 			Data: []int{},
