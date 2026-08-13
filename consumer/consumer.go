@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,7 +19,11 @@ import (
 
 func main() {
 	mutex := sync.Mutex{}
-	var reqs, rps = 0, make([]int, 0)
+	// Atomic rather than mutex-guarded: every delivery increments this, so a lock
+	// here would have the consumer contending with itself at the rates it is
+	// measuring. rps is mutex-guarded instead, being touched once a second.
+	var reqs atomic.Int64
+	rps := make([]int, 0)
 	type Response struct {
 		Data []int `json:"data"`
 	}
@@ -26,19 +31,22 @@ func main() {
 	ticker := time.NewTicker(time.Second)
 	go func() {
 		for range ticker.C {
-			mutex.Lock()
-			if reqs != 0 {
-				rps = append(rps, reqs)
+			n := reqs.Swap(0)
+			if n != 0 {
+				mutex.Lock()
+				rps = append(rps, int(n))
+				mutex.Unlock()
 			}
-			reqs = 0
-			mutex.Unlock()
 		}
 	}()
 
 	latencies := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name:    "event_delivery_seconds",
-		Help:    "The latency in seconds for each event delivery",
-		Buckets: prometheus.LinearBuckets(1, 1, 100),
+		Name: "event_delivery_seconds",
+		Help: "The latency in seconds for each event delivery",
+		// 1ms doubling to roughly 8.7 minutes. Buckets must start well below a
+		// second, or every sub-second delivery collapses into one bucket and the
+		// histogram cannot distinguish a fast cluster from a slow one.
+		Buckets: prometheus.ExponentialBuckets(0.001, 2, 20),
 	})
 
 	httpRequestsTotal := prometheus.NewCounterVec(
@@ -64,8 +72,12 @@ func main() {
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 
 	mux.HandleFunc("/rps", func(w http.ResponseWriter, req *http.Request) {
+		mutex.Lock()
+		snapshot := append([]int(nil), rps...)
+		mutex.Unlock()
+
 		res := Response{
-			Data: rps,
+			Data: snapshot,
 		}
 		b, _ := json.Marshal(res)
 
@@ -73,11 +85,13 @@ func main() {
 	})
 
 	mux.HandleFunc("/clear", func(w http.ResponseWriter, req *http.Request) {
+		mutex.Lock()
 		rps = []int{}
-		reqs = 0
+		mutex.Unlock()
+		reqs.Store(0)
 
 		res := Response{
-			Data: rps,
+			Data: []int{},
 		}
 		b, _ := json.Marshal(res)
 
@@ -85,10 +99,12 @@ func main() {
 	})
 
 	mux.HandleFunc("/px", func(w http.ResponseWriter, req *http.Request) {
+		mutex.Lock()
 		data := make([]float64, len(rps))
 		for i, v := range rps {
 			data[i] = float64(v)
 		}
+		mutex.Unlock()
 		sort.Float64s(data)
 		mean := stat.Mean(data, nil)
 		p95 := percentile(data, 95)
@@ -96,7 +112,9 @@ func main() {
 		p1 := percentile(data, 1)
 		p5 := percentile(data, 5)
 
-		display := fmt.Sprintf("Count: %d\nMean: %.2f\np(1): %.2f\np(5): %.2f\np(95): %.2f\np(99): %.2f\n", len(rps), mean, p1, p5, p95, p99)
+		// len(data), not len(rps): the count has to describe the same snapshot the
+		// percentiles were computed from, and rps can grow between the two reads.
+		display := fmt.Sprintf("Count: %d\nMean: %.2f\np(1): %.2f\np(5): %.2f\np(95): %.2f\np(99): %.2f\n", len(data), mean, p1, p5, p95, p99)
 		_, _ = w.Write([]byte(display))
 	})
 
@@ -104,22 +122,24 @@ func main() {
 		start := time.Now()
 
 		// record metric.
-		if timeHeader, found := req.Header["X-Benchmark-Timestamp"]; found {
+		// Reject rather than accept an unusable timestamp: a run that measured
+		// nothing must not be mistaken for a run that measured zero latency.
+		if timeHeader, found := req.Header["X-Benchmark-Timestamp-Ms"]; found {
 			if len(timeHeader) != 1 {
-				// end.
-				_, _ = w.Write([]byte("End."))
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte("Expected exactly one X-Benchmark-Timestamp-Ms header"))
 				return
 			}
 
 			st, err := strconv.ParseInt(timeHeader[0], 10, 64)
 			if err != nil {
-				// end.
-				_, _ = w.Write([]byte("End."))
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte("X-Benchmark-Timestamp-Ms is not an integer"))
 				return
 			}
 
 			ft := time.Now()
-			latency := ft.Sub(time.Unix(st, 0))
+			latency := ft.Sub(time.UnixMilli(st))
 			latencies.Observe(latency.Seconds())
 
 			elapsed := time.Since(start).Seconds()
@@ -128,13 +148,13 @@ func main() {
 			httpRequestDuration.Observe(elapsed)
 			httpRequestsTotal.WithLabelValues(req.Method).Inc()
 
-			reqs++
+			reqs.Add(1)
 
 			_, _ = w.Write([]byte("Great."))
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte("Required header X-Benchmark-Timestamp missing"))
+		_, _ = w.Write([]byte("Required header X-Benchmark-Timestamp-Ms missing"))
 	})
 
 	srv := http.Server{
