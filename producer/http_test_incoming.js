@@ -12,7 +12,7 @@ export default function () {
 		timeout: "30s",
 		headers: {
 			"Content-Type": "application/json",
-			'X-Benchmark-Timestamp': Math.floor(Date.now() / 1000).toString()
+			'X-Benchmark-Timestamp-Ms': Date.now().toString()
 		},
 	});
 

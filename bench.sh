@@ -95,5 +95,16 @@ get_producer_command() {
 
 producer_command=$(get_producer_command "$producer")
 
+# bin/k6 is an x86_64 build, so on other architectures it runs under emulation,
+# which distorts the timings the load generator itself reports. Prefer a k6
+# installed for the host.
+if command -v k6 >/dev/null 2>&1; then
+  k6_bin="k6"
+else
+  k6_bin="./bin/k6"
+  echo "warning: no k6 on PATH, falling back to the bundled x86_64 build in bin/k6." >&2
+  echo "         install k6 for your architecture before recording results." >&2
+fi
+
 # Execute command
-./bin/k6 run "$producer_command"
+"$k6_bin" run "$producer_command"

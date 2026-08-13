@@ -16,6 +16,12 @@ what cluster size they need for their workloads.
 ## Pre-requisites
 1. Make sure you have a Convoy instance running and properly configured.
 2. If you're going to be testing with a Message Broker, make sure you've provisioned the broker ahead as well. For each broker, there are specific parameters to set, read the flags to know what to supply.
+3. Install k6 for your own architecture (`brew install k6`, or see [the k6 docs](https://grafana.com/docs/k6/latest/set-up/install-k6/)). `bench.sh` prefers a k6 on your `PATH` and only falls back to the checked-in `bin/k6`, which is an x86_64 build.
+
+## Measuring end-to-end latency
+The producer stamps each event with an `X-Benchmark-Timestamp-Ms` header. The consumer reads it back and records the gap in the `event_delivery_seconds` Prometheus histogram, which is the enqueue-to-delivery latency for the whole pipeline. Deliveries per second come from the same consumer, either as `http_requests_total` or from its `/rps` and `/px` endpoints.
+
+Run the producer and the consumer from the same version. A mismatched pair rejects every delivery with a 400 naming the header, rather than reporting a latency that is quietly wrong, so if a run returns nothing but 400s, rebuild the consumer image.
 
 ## Usage
 ```bash
